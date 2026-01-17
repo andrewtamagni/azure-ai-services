@@ -1,0 +1,3 @@
+prefix = <prefix for resources> # 10 Character limmit
+tenant_id = <Tenant ID for the Key Vault>
+subscription_id = <Subscription ID>
