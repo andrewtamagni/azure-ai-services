@@ -1,4 +1,4 @@
-# pulumi-eip-openai-resources
+# azure-ai-services
 
 This Azure RM Python Pulumi program deploys all the backend resources necessary to support an Azure OpenAI ChatBot application.  It creates the OpenAI Service with a model deployment, the Search Service, a storage account with container to store the data to be indexed, an Azure Runbook for continuously updating and a Search Index.  All the necessary IAM roles are assigned as well, along with a Log Analytics Workspace that can be configured for logging. All resources are deployed into a new Resource Group.
 
