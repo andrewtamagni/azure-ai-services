@@ -1,0 +1,8 @@
+name: azure-ai-services
+runtime:
+  name: python
+description: Azure OpenAI, AI Search, blob storage, Log Analytics, and RBAC for RAG-style workloads.
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: azure-python

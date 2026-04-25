@@ -1,0 +1,13 @@
+# -----------------------------------------------------------------------------
+# SAMPLE stack config for project "azure-ai-services" (see Pulumi.yaml).
+# Copy to Pulumi.<yourstack>.yaml and replace placeholder values.
+# -----------------------------------------------------------------------------
+
+config:
+  # --- Azure provider / subscription (replace with your IDs) ---
+  azure:subscriptionId: 00000000-0000-0000-0000-000000000000
+  azure:tenantId: 00000000-0000-0000-0000-000000000000
+  azure-native:location: eastus2
+
+  # --- Resource naming ---
+  azure-ai-services:rg_prefix: ORG

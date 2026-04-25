@@ -7,19 +7,25 @@ as well, along with a Log Analytics Workspace that can be configured for logging
 are deployed into a new Resource Group.
 """
 
+import re
 import pulumi
-from pulumi_azure_native import resources, storage, search, cognitiveservices, authorization, automation, operationalinsights
-from default_vars import *
+from pulumi_azure_native import resources, storage, search, cognitiveservices, authorization, operationalinsights
+
+cfg                       = pulumi.Config()
+azure_cfg                 = pulumi.Config("azure")
+rg_prefix                 = cfg.require("rg_prefix")
+subscription_id           = azure_cfg.require("subscriptionId")
+storage_account_prefix    = re.sub(r"-", "", str(rg_prefix).lower())
 
 # Create an Azure Resource Group
-resource_group = resources.ResourceGroup(str(prefix) + "-AI",
-    resource_group_name=str(prefix) + "-AI",
+resource_group = resources.ResourceGroup(str(rg_prefix) + "-AI",
+    resource_group_name=str(rg_prefix) + "-AI",
     tags={'createdBy': 'Pulumi'},
 )
 
 # Create Log Analytics Workspace
-log_analytics_workspace = operationalinsights.Workspace(str(prefix.lower()) + "-ai-logs",
-    workspace_name=str(prefix.lower()) + "-ai-logs",
+log_analytics_workspace = operationalinsights.Workspace(str(rg_prefix.lower()) + "-ai-logs",
+    workspace_name=str(rg_prefix.lower()) + "-ai-logs",
     resource_group_name=resource_group.name,
     location=resource_group.location,
     sku=operationalinsights.WorkspaceSkuArgs(
@@ -31,8 +37,8 @@ log_analytics_workspace = operationalinsights.Workspace(str(prefix.lower()) + "-
 )
 
 # OpenAI Service
-cognitive_account = cognitiveservices.Account(str(prefix.lower()) + "-ai-service",
-    account_name=str(prefix.lower()) + "-ai-service",
+cognitive_account = cognitiveservices.Account(str(rg_prefix.lower()) + "-ai-service",
+    account_name=str(rg_prefix.lower()) + "-ai-service",
     resource_group_name=resource_group.name,
     location=resource_group.location,
     tags={'createdBy': 'Pulumi'},
@@ -41,7 +47,7 @@ cognitive_account = cognitiveservices.Account(str(prefix.lower()) + "-ai-service
     ),
     kind='OpenAI',
     properties=cognitiveservices.AccountPropertiesArgs(
-        custom_sub_domain_name=str(prefix.lower()) + "-ai-service",
+        custom_sub_domain_name=str(rg_prefix.lower()) + "-ai-service",
         public_network_access='Enabled',
     ),
     identity=cognitiveservices.IdentityArgs(
@@ -53,7 +59,7 @@ cognitive_account = cognitiveservices.Account(str(prefix.lower()) + "-ai-service
 # GPT 4o OpenAI Model Deployment
 gpt_4o_deployment = cognitiveservices.Deployment(
     'gpt_4o_deployment',
-    account_name=str(prefix.lower()) + "-ai-service",
+    account_name=str(rg_prefix.lower()) + "-ai-service",
     deployment_name='gpt-4o',
     resource_group_name=resource_group.name,
     sku=cognitiveservices.SkuArgs(
@@ -75,12 +81,12 @@ gpt_4o_deployment = cognitiveservices.Deployment(
 # GPT 5 Pro OpenAI Model Deployment
 gpt_5_1_deployment = cognitiveservices.Deployment(
     'gpt_5.1_deployment',
-    account_name=str(prefix.lower()) + "-ai-service",
+    account_name=str(rg_prefix.lower()) + "-ai-service",
     deployment_name='gpt-5.1',
     resource_group_name=resource_group.name,
     sku=cognitiveservices.SkuArgs(
-        name='Standard',
-        capacity=70,
+        name='GlobalStandard',
+        capacity=250,
     ),
     properties=cognitiveservices.DeploymentPropertiesArgs(
         model=cognitiveservices.DeploymentModelArgs(
@@ -89,14 +95,14 @@ gpt_5_1_deployment = cognitiveservices.Deployment(
             version='2025-11-13',
         ),
         version_upgrade_option='OnceNewDefaultVersionAvailable',
-        rai_policy_name="Microsoft.Default",
+        rai_policy_name="Microsoft.DefaultV2",
     ),
     opts=pulumi.ResourceOptions(depends_on=[cognitive_account])
 )
 
 # AI Search Service
-search_service = search.Service(str(prefix.lower()) + "-ai-search",
-    search_service_name=str(prefix.lower()) + "-ai-search",
+search_service = search.Service(str(rg_prefix.lower()) + "-ai-search",
+    search_service_name=str(rg_prefix.lower()) + "-ai-search",
     resource_group_name=resource_group.name,
     location=resource_group.location,
     sku=search.SkuArgs(
@@ -119,8 +125,8 @@ search_service = search.Service(str(prefix.lower()) + "-ai-search",
 )
 
 # Storage Account
-storage_account = storage.StorageAccount(str(prefix.lower()) + "aidata",
-    account_name=str(prefix.lower()) + "aidata",
+storage_account = storage.StorageAccount(str(rg_prefix.lower()) + "aidata",
+    account_name=str(storage_account_prefix) + "aidata",
     resource_group_name=resource_group.name,
     location=resource_group.location,
     sku=storage.SkuArgs(
@@ -156,9 +162,9 @@ storage_account = storage.StorageAccount(str(prefix.lower()) + "aidata",
 )
 
 # Storage Blob Container
-blob_container = storage.BlobContainer(str(prefix.lower()) + "wiki",
+blob_container = storage.BlobContainer(str(rg_prefix.lower()) + "wiki",
     account_name=storage_account.name,
-    container_name=str(prefix.lower()) + "wiki",
+    container_name=str(rg_prefix.lower()) + "wiki",
     resource_group_name=resource_group.name,
     public_access=storage.PublicAccess.NONE,
     opts=pulumi.ResourceOptions(depends_on=[storage_account])
@@ -237,12 +243,12 @@ storage_blob_data_contributor_role_assignment_openai = authorization.RoleAssignm
     opts=pulumi.ResourceOptions(depends_on=[cognitive_account, storage_account]),
 )
 
-##### Migrated the Automation Account to EIP-TASKS #####
+##### Migrated the Automation Account to an external task environment #####
 """
 # Create an Azure Automation Account
 automation_account = automation.AutomationAccount(
-    str(prefix.lower()) + "-ai-search-update",
-    automation_account_name=str(prefix.lower()) + "-ai-search-update",
+    str(rg_prefix.lower()) + "-ai-search-update",
+    automation_account_name=str(rg_prefix.lower()) + "-ai-search-update",
     resource_group_name=resource_group.name,
     location=resource_group.location,
     sku=automation.SkuArgs(name='Basic'),
@@ -287,7 +293,7 @@ contributor_role_assignment_automation = authorization.RoleAssignment(
     opts=pulumi.ResourceOptions(depends_on=[resource_group, automation_account])
 )
 """
-###### Attempted to create index but with these managed ID roles but recieved error for not enough permission.  Went with API key instead, keeping this code for reference ######
+###### Attempted to create index but with these managed identity roles but received an error for not enough permission. Went with API key instead, keeping this code for reference. ######
 """
 # Assign Storage Blob Data Reader role to Azure OpenAI managed identity
 storage_blob_data_reader_role_assignment_openai = authorization.RoleAssignment(

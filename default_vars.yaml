@@ -1,0 +1,8 @@
+# Merge source for stack_menu.py checklist / seeding: __REQUIRED__ / __OPTIONAL__.
+# Keys without a provider prefix are namespaced with the project name from Pulumi.yaml (azure-ai-services).
+# See Pulumi.sample.yaml for a full committed example.
+
+azure:subscriptionId: __REQUIRED__
+azure:tenantId: __REQUIRED__
+azure-native:location: __REQUIRED__
+rg_prefix: __REQUIRED__ # resource group prefix used for RG and service naming
